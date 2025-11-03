@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Message } from '../types';
 import { ChatBubble } from './ChatBubble';
@@ -22,9 +23,21 @@ interface AssistantWidgetProps {
 const FRAME_RATE = 2; // Send 2 frames per second
 const JPEG_QUALITY = 0.7;
 
+// Local Storage Key
+const LOCAL_STORAGE_KEY = 'salou_chat_history';
+
 
 export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ closeWidget }) => {
-    const [messages, setMessages] = useState<Message[]>([]);
+    // Initialize messages from local storage
+    const [messages, setMessages] = useState<Message[]>(() => {
+        try {
+            const savedMessages = localStorage.getItem(LOCAL_STORAGE_KEY);
+            return savedMessages ? JSON.parse(savedMessages) : [];
+        } catch (error) {
+            console.error("Error loading chat history from local storage:", error);
+            return [];
+        }
+    });
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const chatSessionRef = useRef<Chat | null>(null);
@@ -54,6 +67,17 @@ export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ closeWidget })
     useEffect(() => {
         chatSessionRef.current = createChatSession();
     }, []);
+
+    // Effect to save messages to local storage
+    useEffect(() => {
+        if (!isLiveMode && messages.length > 0) {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages));
+            } catch (error) {
+                console.error("Error saving chat history to local storage:", error);
+            }
+        }
+    }, [messages, isLiveMode]);
 
     useEffect(() => {
         if (transcript) {
